@@ -1,0 +1,30 @@
+function [vol,somaCoord] = removeSoma(vol,volOrig,options)
+% Software developed by: Uygar Sümbül <uygar@stat.columbia.edu, uygar@mit.edu>
+% THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
+% IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DAMAGES WHATSOEVER.
+%
+% Remove the somata in the 3d binary image stack
+
+if nargin < 3; options = []; end;
+if ~isfield(options,'dilationRadius') || isempty(options.dilationRadius); dilationRadius = 5;              else; dilationRadius = options.dilationRadius; end;
+if ~isfield(options,'dilationBase')   || isempty(options.dilationBase);   dilationBase   = dilationRadius; else; dilationBase = options.dilationBase; end;
+if ~isfield(options,'dilationHeight') || isempty(options.dilationHeight); dilationHeight = 5;              else; dilationHeight = options.dilationHeight; end;
+
+dilationKernel = zeros(2*dilationBase+1,2*dilationBase+1,2*dilationHeight+1);
+overallRadius = sqrt(dilationBase^2+dilationBase^2+dilationHeight^2);
+[xx, yy, zz] = meshgrid(-dilationBase:dilationBase,-dilationBase:dilationBase,-dilationHeight:dilationHeight);
+dilationKernel = sqrt(xx.^2+yy.^2+zz.^2)<=dilationRadius;
+
+soma = imdilate(imopen(vol,dilationKernel),dilationKernel);
+realSoma = double(soma); 
+realSoma2 = volOrig;
+realSoma2(realSoma<1)=0;
+maxval = max(max(max(realSoma2))); minval = min(min(min(realSoma2)));
+range = maxval - minval;
+indices = find(realSoma2>minval+range*0.99);
+% [list indices] = sort(realSoma2([1:prod(size(realSoma2))]'),'descend');
+[xind yind zind] = ind2sub(size(realSoma2),indices);
+somaCoord = [median(xind) size(soma,1)-median(yind) median(zind)];
+% somaCoord = [median(xind) median(yind) median(zind)];
+
+vol = max(0,vol-imdilate(imopen(vol,dilationKernel),dilationKernel));

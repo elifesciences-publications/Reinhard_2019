@@ -1,0 +1,7 @@
+clear
+close all
+clc
+
+checkAll = 2; % if 0: only check things to do manually, if 2 only automatic
+
+RGC_masterscript(checkAll)
